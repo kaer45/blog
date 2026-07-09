@@ -1,0 +1,103 @@
+
+<template>
+  <Layout>
+    <div class="max-w-2xl mx-auto">
+      <h1 class="page-title">联系我</h1>
+      
+      <div class="card p-8 mb-6">
+        <h3 class="text-lg font-bold mb-4">给我留言</h3>
+        
+        <form @submit.prevent="handleSubmit" class="space-y-6">
+          <div class="form-group">
+            <label class="form-label">姓名</label>
+            <input 
+              v-model="form.name"
+              type="text" 
+              class="form-input" 
+              placeholder="请输入你的姓名"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">邮箱</label>
+            <input 
+              v-model="form.email"
+              type="email" 
+              class="form-input" 
+              placeholder="请输入你的邮箱"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">主题</label>
+            <input 
+              v-model="form.subject"
+              type="text" 
+              class="form-input" 
+              placeholder="请输入留言主题"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">内容</label>
+            <textarea 
+              v-model="form.message"
+              class="form-input textarea" 
+              placeholder="请输入留言内容..."
+            ></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            发送留言
+          </button>
+        </form>
+      </div>
+
+      <div class="card p-6">
+        <h3 class="text-lg font-bold mb-4">其他联系方式</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex items-center">
+            <svg class="w-8 h-8 text-primary-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            <div>
+              <p class="font-medium">邮箱</p>
+              <p class="text-gray-500 text-sm">email@example.com</p>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <svg class="w-8 h-8 text-primary-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            <div>
+              <p class="font-medium">地址</p>
+              <p class="text-gray-500 text-sm">北京市</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Layout>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import Layout from '@/components/Layout.vue'
+
+const form = ref({
+  name: '',
+  email: '',
+  subject: '',
+  message: ''
+})
+
+const handleSubmit = () => {
+  if (!form.value.name || !form.value.email || !form.value.message) {
+    alert('请填写必填项')
+    return
+  }
+  alert('留言发送成功！')
+  form.value = { name: '', email: '', subject: '', message: '' }
+}
+</script>
