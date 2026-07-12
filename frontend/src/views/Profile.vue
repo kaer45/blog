@@ -113,7 +113,7 @@
 import { ref, computed, onMounted } from 'vue'
 import Layout from '@/components/Layout.vue'
 import { useUserStore } from '@/stores/user'
-import { articleApi } from '@/api/index'
+import { articleApi, userApi } from '@/api/index'
 
 const userStore = useUserStore()
 const activeTab = ref('articles')
@@ -123,7 +123,16 @@ const user = computed(() => userStore.user)
 
 onMounted(async () => {
   try {
-    const response = await articleApi.list()
+    const profileResponse = await userApi.getProfile()
+    if (profileResponse.code === 200) {
+      userStore.login(profileResponse.data)
+    }
+  } catch (error) {
+    console.error('加载用户资料失败:', error)
+  }
+  
+  try {
+    const response = await articleApi.list({ authorId: userStore.user.id })
     if (response.code === 200) {
       userArticles.value = response.data || []
     }

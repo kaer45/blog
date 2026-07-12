@@ -57,4 +57,9 @@ export const commentApi = {
   delete: (id) => api.delete(`/comments/${id}`)
 }
 
+export const userApi = {
+  getProfile: () => api.get('/user/profile'),
+  updateProfile: (data) => api.put('/user/profile', data)
+}
+
 export default api

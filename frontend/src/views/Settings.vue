@@ -7,7 +7,7 @@
       <div class="card p-8 mb-6">
         <h3 class="text-lg font-bold mb-4">基本信息</h3>
         
-        <form class="space-y-6">
+        <form class="space-y-6" @submit.prevent="handleSubmit">
           <div class="form-group">
             <label class="form-label">用户名</label>
             <input 
@@ -35,6 +35,7 @@
               type="email" 
               class="form-input" 
               placeholder="请输入邮箱"
+              disabled
             />
           </div>
 
@@ -47,8 +48,8 @@
             ></textarea>
           </div>
 
-          <button type="submit" class="btn btn-primary">
-            保存修改
+          <button type="submit" class="btn btn-primary" :disabled="loading">
+            {{ loading ? '保存中...' : '保存修改' }}
           </button>
         </form>
       </div>
@@ -120,17 +121,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import Layout from '@/components/Layout.vue'
 import { useUserStore } from '@/stores/user'
+import { userApi } from '@/api/index'
 
 const userStore = useUserStore()
 
 const form = ref({
-  username: userStore.user.username,
-  nickname: userStore.user.nickname || '',
-  email: userStore.user.email || '',
-  bio: userStore.user.bio || ''
+  username: '',
+  nickname: '',
+  email: '',
+  bio: ''
 })
 
 const passwordForm = ref({
@@ -138,4 +140,43 @@ const passwordForm = ref({
   newPassword: '',
   confirmPassword: ''
 })
+
+const loading = ref(false)
+
+onMounted(async () => {
+  try {
+    const response = await userApi.getProfile()
+    if (response.code === 200) {
+      const userData = response.data
+      form.value = {
+        username: userData.username || '',
+        nickname: userData.nickname || '',
+        email: userData.email || '',
+        bio: userData.bio || ''
+      }
+      userStore.login(userData)
+    }
+  } catch (error) {
+    console.error('加载用户资料失败:', error)
+  }
+})
+
+const handleSubmit = async () => {
+  loading.value = true
+  try {
+    const response = await userApi.updateProfile({
+      nickname: form.value.nickname,
+      bio: form.value.bio
+    })
+    if (response.code === 200) {
+      userStore.login(response.data)
+      alert('资料更新成功')
+    }
+  } catch (error) {
+    console.error('更新资料失败:', error)
+    alert('更新失败，请重试')
+  } finally {
+    loading.value = false
+  }
+}
 </script>
