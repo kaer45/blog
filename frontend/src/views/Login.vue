@@ -36,8 +36,8 @@
           <a href="#" class="text-sm text-primary-600 hover:underline">忘记密码？</a>
         </div>
 
-        <button type="submit" class="btn btn-primary w-full">
-          登录
+        <button type="submit" class="btn btn-primary w-full" :disabled="loading">
+          {{ loading ? '登录中...' : '登录' }}
         </button>
       </form>
 
@@ -84,6 +84,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { authApi } from '@/api/index'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -93,21 +94,29 @@ const form = ref({
   password: ''
 })
 
-const handleLogin = () => {
+const loading = ref(false)
+
+const handleLogin = async () => {
   if (!form.value.username || !form.value.password) {
     alert('请填写用户名和密码')
     return
   }
   
-  userStore.login({
-    id: 1,
-    username: form.value.username,
-    nickname: '用户',
-    email: 'user@example.com',
-    avatar: '',
-    bio: ''
-  })
-  
-  router.push('/')
+  loading.value = true
+  try {
+    const response = await authApi.login(form.value)
+    if (response.code === 200) {
+      const { token, user } = response.data
+      localStorage.setItem('token', token)
+      userStore.login(user)
+      router.push('/')
+    } else {
+      alert(response.message || '登录失败')
+    }
+  } catch (error) {
+    alert('登录失败，请检查网络或账号密码')
+  } finally {
+    loading.value = false
+  }
 }
 </script>

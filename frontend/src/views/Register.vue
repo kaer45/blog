@@ -68,8 +68,8 @@
           </label>
         </div>
 
-        <button type="submit" class="btn btn-primary w-full">
-          注册
+        <button type="submit" class="btn btn-primary w-full" :disabled="loading">
+          {{ loading ? '注册中...' : '注册' }}
         </button>
       </form>
 
@@ -87,6 +87,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { authApi } from '@/api/index'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -100,7 +101,9 @@ const form = ref({
   agree: false
 })
 
-const handleRegister = () => {
+const loading = ref(false)
+
+const handleRegister = async () => {
   if (!form.value.username || !form.value.email || !form.value.password) {
     alert('请填写必填项')
     return
@@ -116,15 +119,25 @@ const handleRegister = () => {
     return
   }
   
-  userStore.login({
-    id: 1,
-    username: form.value.username,
-    nickname: form.value.nickname || form.value.username,
-    email: form.value.email,
-    avatar: '',
-    bio: ''
-  })
-  
-  router.push('/')
+  loading.value = true
+  try {
+    const response = await authApi.register({
+      username: form.value.username,
+      email: form.value.email,
+      password: form.value.password,
+      nickname: form.value.nickname
+    })
+    
+    if (response.code === 200) {
+      alert('注册成功，请登录')
+      router.push('/login')
+    } else {
+      alert(response.message || '注册失败')
+    }
+  } catch (error) {
+    alert('注册失败，请检查网络')
+  } finally {
+    loading.value = false
+  }
 }
 </script>

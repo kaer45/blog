@@ -52,27 +52,46 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import Layout from '@/components/Layout.vue'
 import ArticleCard from '@/components/ArticleCard.vue'
 import Sidebar from '@/components/Sidebar.vue'
-import { articles, categories } from '@/data/mockData'
+import { articleApi, categoryApi } from '@/api/index'
 
+const articles = ref([])
+const categories = ref([])
 const currentPage = ref(1)
-const pageSize = 5
+const totalPages = ref(1)
+const loading = ref(false)
 
-const totalPages = computed(() => {
-  return Math.ceil(articles.length / pageSize)
-})
+const loadArticles = async () => {
+  loading.value = true
+  try {
+    const response = await articleApi.list()
+    if (response.code === 200) {
+      articles.value = response.data || []
+      totalPages.value = Math.ceil(articles.value.length / 5)
+    }
+  } catch (error) {
+    console.error('加载文章失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
 
-const paginatedArticles = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  const end = start + pageSize
-  return articles.slice(start, end)
-})
+const loadCategories = async () => {
+  try {
+    const response = await categoryApi.list()
+    if (response.code === 200) {
+      categories.value = response.data || []
+    }
+  } catch (error) {
+    console.error('加载分类失败:', error)
+  }
+}
 
 const getCategoryName = (categoryId) => {
-  const category = categories.find(c => c.id === categoryId)
+  const category = categories.value.find(c => c.id === categoryId)
   return category ? category.name : '未分类'
 }
 
@@ -89,6 +108,7 @@ const nextPage = () => {
 }
 
 onMounted(() => {
-  console.log('首页加载完成')
+  loadArticles()
+  loadCategories()
 })
 </script>

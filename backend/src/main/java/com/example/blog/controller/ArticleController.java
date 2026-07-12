@@ -6,6 +6,8 @@ import com.example.blog.dto.Result;
 import com.example.blog.entity.Article;
 import com.example.blog.service.ArticleService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,13 +50,21 @@ public class ArticleController {
         article.setSummary(dto.getSummary());
         article.setContent(dto.getContent());
         article.setCategoryId(dto.getCategoryId());
-        article.setAuthorId(1L);
+        article.setAuthorId(getCurrentUserId());
         article.setViewCount(0);
         article.setLikeCount(0);
         article.setCommentCount(0);
         article.setIsPublished(dto.getIsPublished() != null && dto.getIsPublished());
         articleService.save(article);
         return Result.success(article);
+    }
+
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Long) {
+            return (Long) authentication.getPrincipal();
+        }
+        return 1L;
     }
 
     @PutMapping("/{id}")

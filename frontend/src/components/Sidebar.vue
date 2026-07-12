@@ -77,8 +77,9 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { categories, tags, latestArticles } from '@/data/mockData'
+import { categoryApi, articleApi } from '@/api/index'
 
 const router = useRouter()
 
@@ -86,7 +87,41 @@ const avatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Author'
 const nickname = '博客作者'
 const bio = '热爱技术，喜欢分享。欢迎关注我的博客！'
 
+const categories = ref([])
+const tags = ref([
+  'Vue3', 'React', 'TypeScript', 'Spring Boot', 'MySQL', 'Redis', 
+  'Docker', 'Git', 'VS Code', 'Node.js', '前端', '后端', '算法', '面试'
+])
+const latestArticles = ref([])
+
+const loadCategories = async () => {
+  try {
+    const response = await categoryApi.list()
+    if (response.code === 200) {
+      categories.value = response.data || []
+    }
+  } catch (error) {
+    console.error('加载分类失败:', error)
+  }
+}
+
+const loadLatestArticles = async () => {
+  try {
+    const response = await articleApi.list()
+    if (response.code === 200) {
+      latestArticles.value = (response.data || []).slice(0, 5)
+    }
+  } catch (error) {
+    console.error('加载最新文章失败:', error)
+  }
+}
+
 const goToTag = (tag) => {
   router.push(`/tag/${tag}`)
 }
+
+onMounted(() => {
+  loadCategories()
+  loadLatestArticles()
+})
 </script>

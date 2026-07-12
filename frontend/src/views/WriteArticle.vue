@@ -97,17 +97,19 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import Layout from '@/components/Layout.vue'
-import { categories } from '@/data/mockData'
+import { categoryApi, articleApi } from '@/api/index'
 
 const route = useRoute()
 const router = useRouter()
 
 const isEdit = ref(!!route.params.id)
 const activeTab = ref('editor')
+const categories = ref([])
+const loading = ref(false)
 
 const form = ref({
   title: '',
@@ -122,19 +124,69 @@ const renderedContent = computed(() => {
   return marked(form.value.content)
 })
 
-const saveDraft = () => {
+const loadCategories = async () => {
+  try {
+    const response = await categoryApi.list()
+    if (response.code === 200) {
+      categories.value = response.data || []
+    }
+  } catch (error) {
+    console.error('加载分类失败:', error)
+  }
+}
+
+const loadArticle = async () => {
+  if (!isEdit.value) return
+  
+  loading.value = true
+  try {
+    const response = await articleApi.getById(route.params.id)
+    if (response.code === 200) {
+      const article = response.data
+      form.value.title = article.title
+      form.value.summary = article.summary
+      form.value.content = article.content
+      form.value.categoryId = article.categoryId
+    }
+  } catch (error) {
+    console.error('加载文章失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const saveDraft = async () => {
   if (!form.value.title) {
     alert('请输入文章标题')
     return
   }
-  alert('草稿保存成功！')
+  
+  loading.value = true
+  try {
+    if (isEdit.value) {
+      await articleApi.update(route.params.id, {
+        ...form.value,
+        isPublished: false
+      })
+    } else {
+      await articleApi.create({
+        ...form.value,
+        isPublished: false
+      })
+    }
+    alert('草稿保存成功！')
+  } catch (error) {
+    alert('保存失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 const previewArticle = () => {
   activeTab.value = 'preview'
 }
 
-const publishArticle = () => {
+const publishArticle = async () => {
   if (!form.value.title) {
     alert('请输入文章标题')
     return
@@ -144,7 +196,30 @@ const publishArticle = () => {
     return
   }
   
-  alert(isEdit.value ? '文章更新成功！' : '文章发布成功！')
-  router.push('/')
+  loading.value = true
+  try {
+    if (isEdit.value) {
+      await articleApi.update(route.params.id, {
+        ...form.value,
+        isPublished: true
+      })
+    } else {
+      await articleApi.create({
+        ...form.value,
+        isPublished: true
+      })
+    }
+    alert(isEdit.value ? '文章更新成功！' : '文章发布成功！')
+    router.push('/')
+  } catch (error) {
+    alert('发布失败')
+  } finally {
+    loading.value = false
+  }
 }
+
+onMounted(() => {
+  loadCategories()
+  loadArticle()
+})
 </script>

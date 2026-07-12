@@ -56,4 +56,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         return user;
     }
+    
+    public String encodePassword(String password) {
+        return passwordEncoder.encode(password);
+    }
 }

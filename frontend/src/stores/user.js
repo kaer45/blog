@@ -15,9 +15,15 @@ export const useUserStore = defineStore('user', () => {
   const isLoggedIn = computed(() => user.value.id !== null)
 
   const login = (userData) => {
-    user.value = { ...userData }
-    localStorage.setItem('token', 'mock-token')
-    localStorage.setItem('user', JSON.stringify(userData))
+    user.value = { 
+      id: userData.id,
+      username: userData.username,
+      nickname: userData.nickname || userData.username,
+      email: userData.email,
+      avatar: userData.avatar || '',
+      bio: userData.bio || ''
+    }
+    localStorage.setItem('user', JSON.stringify(user.value))
   }
 
   const logout = () => {
@@ -36,7 +42,11 @@ export const useUserStore = defineStore('user', () => {
   const initUser = () => {
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
-      user.value = JSON.parse(storedUser)
+      try {
+        user.value = JSON.parse(storedUser)
+      } catch (e) {
+        console.error('Failed to parse stored user:', e)
+      }
     }
   }
 

@@ -35,14 +35,31 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Layout from '@/components/Layout.vue'
 import Sidebar from '@/components/Sidebar.vue'
-import { categories } from '@/data/mockData'
+import { categoryApi } from '@/api/index'
 
 const router = useRouter()
+const categories = ref([])
 
 const goToCategory = (categoryId) => {
   router.push(`/categories/${categoryId}`)
 }
+
+const loadCategories = async () => {
+  try {
+    const response = await categoryApi.list()
+    if (response.code === 200) {
+      categories.value = response.data || []
+    }
+  } catch (error) {
+    console.error('加载分类失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadCategories()
+})
 </script>

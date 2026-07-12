@@ -113,12 +113,17 @@ import { marked } from 'marked'
 import hljs from 'highlight.js'
 import Layout from '@/components/Layout.vue'
 import Sidebar from '@/components/Sidebar.vue'
-import { articles, categories, comments as mockComments } from '@/data/mockData'
+import { articleApi, commentApi, categoryApi } from '@/api/index'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const userStore = useUserStore()
 const articleId = ref(Number(route.params.id))
+
+const article = ref(null)
+const comments = ref([])
+const categories = ref([])
+const loading = ref(false)
 
 marked.setOptions({
   highlight: function(code, lang) {
@@ -129,14 +134,6 @@ marked.setOptions({
   },
   breaks: true,
   gfm: true
-})
-
-const article = computed(() => {
-  return articles.find(a => a.id === articleId.value)
-})
-
-const comments = computed(() => {
-  return mockComments.filter(c => c.articleId === articleId.value)
 })
 
 const isLoggedIn = computed(() => userStore.isLoggedIn)
@@ -154,14 +151,45 @@ const isLiked = ref(false)
 const likeCount = ref(0)
 const commentContent = ref('')
 
-onMounted(() => {
-  if (article.value) {
-    likeCount.value = article.value.likeCount || 0
+const loadArticle = async () => {
+  loading.value = true
+  try {
+    const response = await articleApi.getById(articleId.value)
+    if (response.code === 200) {
+      article.value = response.data
+      likeCount.value = article.value.likeCount || 0
+    }
+  } catch (error) {
+    console.error('加载文章失败:', error)
+  } finally {
+    loading.value = false
   }
-})
+}
+
+const loadComments = async () => {
+  try {
+    const response = await commentApi.listByArticle(articleId.value)
+    if (response.code === 200) {
+      comments.value = response.data || []
+    }
+  } catch (error) {
+    console.error('加载评论失败:', error)
+  }
+}
+
+const loadCategories = async () => {
+  try {
+    const response = await categoryApi.list()
+    if (response.code === 200) {
+      categories.value = response.data || []
+    }
+  } catch (error) {
+    console.error('加载分类失败:', error)
+  }
+}
 
 const getCategoryName = (categoryId) => {
-  const category = categories.find(c => c.id === categoryId)
+  const category = categories.value.find(c => c.id === categoryId)
   return category ? category.name : '未分类'
 }
 
@@ -184,12 +212,34 @@ const toggleLike = () => {
   likeCount.value += isLiked.value ? 1 : -1
 }
 
-const submitComment = () => {
+const submitComment = async () => {
   if (!commentContent.value.trim()) {
     alert('请输入评论内容')
     return
   }
-  alert('评论提交成功！')
-  commentContent.value = ''
+  
+  try {
+    const response = await commentApi.create({
+      articleId: articleId.value,
+      authorId: userStore.user.id,
+      content: commentContent.value
+    })
+    
+    if (response.code === 200) {
+      alert('评论提交成功！')
+      commentContent.value = ''
+      loadComments()
+    } else {
+      alert(response.message || '评论失败')
+    }
+  } catch (error) {
+    alert('评论失败，请检查网络')
+  }
 }
+
+onMounted(() => {
+  loadArticle()
+  loadComments()
+  loadCategories()
+})
 </script>

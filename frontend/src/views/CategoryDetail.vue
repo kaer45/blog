@@ -34,21 +34,43 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import Layout from '@/components/Layout.vue'
 import ArticleCard from '@/components/ArticleCard.vue'
 import Sidebar from '@/components/Sidebar.vue'
-import { articles, categories } from '@/data/mockData'
+import { categoryApi, articleApi } from '@/api/index'
 
 const route = useRoute()
 const categoryId = computed(() => Number(route.params.id))
 
-const category = computed(() => {
-  return categories.find(c => c.id === categoryId.value)
-})
+const category = ref(null)
+const categoryArticles = ref([])
 
-const categoryArticles = computed(() => {
-  return articles.filter(a => a.categoryId === categoryId.value && a.isPublished)
+const loadCategory = async () => {
+  try {
+    const response = await categoryApi.getById(categoryId.value)
+    if (response.code === 200) {
+      category.value = response.data
+    }
+  } catch (error) {
+    console.error('加载分类失败:', error)
+  }
+}
+
+const loadArticles = async () => {
+  try {
+    const response = await articleApi.list({ categoryId: categoryId.value })
+    if (response.code === 200) {
+      categoryArticles.value = response.data || []
+    }
+  } catch (error) {
+    console.error('加载文章失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadCategory()
+  loadArticles()
 })
 </script>
