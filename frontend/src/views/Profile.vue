@@ -1,4 +1,3 @@
-
 <template>
   <Layout>
     <div class="max-w-4xl mx-auto">
@@ -111,18 +110,26 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Layout from '@/components/Layout.vue'
 import { useUserStore } from '@/stores/user'
-import { articles } from '@/data/mockData'
+import { articleApi } from '@/api/index'
 
 const userStore = useUserStore()
 const activeTab = ref('articles')
+const userArticles = ref([])
 
 const user = computed(() => userStore.user)
 
-const userArticles = computed(() => {
-  return articles.filter(a => a.authorId === user.value.id)
+onMounted(async () => {
+  try {
+    const response = await articleApi.list()
+    if (response.code === 200) {
+      userArticles.value = response.data || []
+    }
+  } catch (error) {
+    console.error('加载文章失败:', error)
+  }
 })
 
 const formatDate = (dateStr) => {
