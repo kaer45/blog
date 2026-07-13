@@ -36,8 +36,8 @@
             <router-link to="/write" class="btn btn-primary">
               写文章
             </router-link>
-            <div class="relative">
-              <button @click="showUserMenu = !showUserMenu" class="flex items-center space-x-2">
+            <div class="relative user-menu-container">
+              <button @click.stop="toggleUserMenu" class="flex items-center space-x-2">
                 <img 
                   :src="currentUser.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + currentUser.username" 
                   :alt="currentUser.nickname" 
@@ -53,7 +53,7 @@
                   设置
                 </router-link>
                 <hr class="my-2" />
-                <button @click="logout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                <button @click.stop="logout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
                   退出登录
                 </button>
               </div>
@@ -89,7 +89,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -103,7 +103,23 @@ const logout = () => {
   showUserMenu.value = false
 }
 
+const handleClickOutside = (event) => {
+  const userMenuContainer = document.querySelector('.user-menu-container')
+  if (userMenuContainer && !userMenuContainer.contains(event.target)) {
+    showUserMenu.value = false
+  }
+}
+
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value
+}
+
 onMounted(() => {
   userStore.initUser()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>

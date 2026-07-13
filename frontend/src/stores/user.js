@@ -9,7 +9,8 @@ export const useUserStore = defineStore('user', () => {
     nickname: '',
     email: '',
     avatar: '',
-    bio: ''
+    bio: '',
+    githubUrl: ''
   })
 
   const isLoggedIn = computed(() => user.value.id !== null)
@@ -21,7 +22,8 @@ export const useUserStore = defineStore('user', () => {
       nickname: userData.nickname || userData.username,
       email: userData.email,
       avatar: userData.avatar || '',
-      bio: userData.bio || ''
+      bio: userData.bio || '',
+      githubUrl: userData.githubUrl || ''
     }
     localStorage.setItem('user', JSON.stringify(user.value))
   }
@@ -33,7 +35,8 @@ export const useUserStore = defineStore('user', () => {
       nickname: '',
       email: '',
       avatar: '',
-      bio: ''
+      bio: '',
+      githubUrl: ''
     }
     localStorage.removeItem('token')
     localStorage.removeItem('user')

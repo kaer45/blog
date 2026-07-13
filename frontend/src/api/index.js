@@ -62,4 +62,27 @@ export const userApi = {
   updateProfile: (data) => api.put('/user/profile', data)
 }
 
+export const uploadApi = {
+  upload: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/upload', formData)
+  }
+}
+
+export const followApi = {
+  getStats: (userId) => api.get(`/follow/stats/${userId}`),
+  checkFollowing: (followingId) => api.get(`/follow/check/${followingId}`),
+  follow: (followingId) => api.post(`/follow/${followingId}`),
+  unfollow: (followingId) => api.delete(`/follow/${followingId}`)
+}
+
+export const articleLikeApi = {
+  countLikes: (articleId) => api.get(`/article-likes/count/${articleId}`),
+  checkLiked: (articleId) => api.get(`/article-likes/check/${articleId}`),
+  like: (articleId) => api.post(`/article-likes/${articleId}`),
+  unlike: (articleId) => api.delete(`/article-likes/${articleId}`),
+  getLikedArticles: () => api.get('/article-likes/user')
+}
+
 export default api

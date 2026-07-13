@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     `avatar` VARCHAR(255),
     `nickname` VARCHAR(50),
     `bio` TEXT,
+    `github_url` VARCHAR(255),
     `created_at` DATETIME NOT NULL,
     `updated_at` DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -53,4 +54,28 @@ CREATE TABLE IF NOT EXISTS `comment` (
     FOREIGN KEY (`article_id`) REFERENCES `article`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`author_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`parent_id`) REFERENCES `comment`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `follow` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `follower_id` BIGINT NOT NULL,
+    `following_id` BIGINT NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    INDEX `idx_follow_follower` (`follower_id`),
+    INDEX `idx_follow_following` (`following_id`),
+    UNIQUE KEY `uk_follow` (`follower_id`, `following_id`),
+    FOREIGN KEY (`follower_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`following_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `article_like` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `user_id` BIGINT NOT NULL,
+    `article_id` BIGINT NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    INDEX `idx_like_user` (`user_id`),
+    INDEX `idx_like_article` (`article_id`),
+    UNIQUE KEY `uk_like` (`user_id`, `article_id`),
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`article_id`) REFERENCES `article`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

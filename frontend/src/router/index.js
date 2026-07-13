@@ -53,7 +53,7 @@ const routes = [
     component: () => import('@/views/WriteArticle.vue')
   },
   {
-    path: '/article/edit/:id',
+    path: '/write/:id',
     name: 'EditArticle',
     component: () => import('@/views/WriteArticle.vue')
   },

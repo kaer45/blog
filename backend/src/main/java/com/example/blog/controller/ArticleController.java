@@ -25,9 +25,12 @@ public class ArticleController {
     @GetMapping
     public Result<List<Article>> list(
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) Long authorId) {
+            @RequestParam(required = false) Long authorId,
+            @RequestParam(required = false) Boolean draft) {
         List<Article> articles;
-        if (authorId != null) {
+        if (draft != null && draft) {
+            articles = articleService.findDraftsByAuthor(getCurrentUserId());
+        } else if (authorId != null) {
             articles = articleService.findByAuthor(authorId);
         } else if (categoryId != null) {
             articles = articleService.findByCategory(categoryId);

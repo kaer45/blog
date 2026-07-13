@@ -1,21 +1,32 @@
 package com.example.blog.controller;
 
 import com.example.blog.dto.Result;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/upload")
 public class FileController {
 
-    private static final String UPLOAD_DIR = "./uploads";
+    @Value("${upload.dir:./uploads}")
+    private String uploadDir;
+
+    @PostConstruct
+    public void init() throws IOException {
+        Path uploadPath = Paths.get(uploadDir);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+    }
 
     @PostMapping
     public Result<String> upload(@RequestParam("file") MultipartFile file) {
@@ -28,13 +39,9 @@ public class FileController {
         String newFilename = UUID.randomUUID().toString() + extension;
 
         try {
-            Path uploadPath = Paths.get(UPLOAD_DIR);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
+            Path uploadPath = Paths.get(uploadDir);
             Path filePath = uploadPath.resolve(newFilename);
-            file.transferTo(new File(filePath.toString()));
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             String url = "/uploads/" + newFilename;
             return Result.success(url);

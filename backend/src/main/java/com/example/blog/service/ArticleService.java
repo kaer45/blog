@@ -10,6 +10,7 @@ public interface ArticleService extends IService<Article> {
     List<Article> findPublishedArticles();
     List<Article> findByCategory(Long categoryId);
     List<Article> findByAuthor(Long authorId);
+    List<Article> findDraftsByAuthor(Long authorId);
     Article findByIdWithAuthor(Long id);
     Article publish(Long id);
     Article draft(Long id);

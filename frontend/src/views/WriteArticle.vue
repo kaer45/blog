@@ -100,8 +100,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
+import katex from 'katex'
 import Layout from '@/components/Layout.vue'
 import { categoryApi, articleApi } from '@/api/index'
+
+marked.setOptions({
+  gfm: true,
+  breaks: true
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -119,9 +125,35 @@ const form = ref({
   tags: ''
 })
 
+const renderMath = (html) => {
+  html = html.replace(/\$\$(.+?)\$\$/g, (_, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), {
+        throwOnError: false,
+        displayMode: true
+      })
+    } catch (e) {
+      return '$$' + formula + '$$'
+    }
+  })
+  html = html.replace(/\$([^$]+)\$/g, (_, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), {
+        throwOnError: false,
+        displayMode: false
+      })
+    } catch (e) {
+      return '$' + formula + '$'
+    }
+  })
+  return html
+}
+
 const renderedContent = computed(() => {
   if (!form.value.content) return ''
-  return marked(form.value.content)
+  let html = marked(form.value.content)
+  html = renderMath(html)
+  return html
 })
 
 const loadCategories = async () => {

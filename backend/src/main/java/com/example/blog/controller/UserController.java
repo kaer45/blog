@@ -47,6 +47,9 @@ public class UserController {
         if (dto.getAvatar() != null) {
             user.setAvatar(dto.getAvatar());
         }
+        if (dto.getGithubUrl() != null) {
+            user.setGithubUrl(dto.getGithubUrl());
+        }
         user.setUpdatedAt(java.time.LocalDateTime.now());
         
         userService.updateById(user);

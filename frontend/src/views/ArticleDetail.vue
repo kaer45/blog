@@ -111,6 +111,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
+import katex from 'katex'
 import Layout from '@/components/Layout.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import { articleApi, commentApi, categoryApi } from '@/api/index'
@@ -136,6 +137,30 @@ marked.setOptions({
   gfm: true
 })
 
+const renderMath = (html) => {
+  html = html.replace(/\$\$(.+?)\$\$/g, (_, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), {
+        throwOnError: false,
+        displayMode: true
+      })
+    } catch (e) {
+      return '$$' + formula + '$$'
+    }
+  })
+  html = html.replace(/\$([^$]+)\$/g, (_, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), {
+        throwOnError: false,
+        displayMode: false
+      })
+    } catch (e) {
+      return '$' + formula + '$'
+    }
+  })
+  return html
+}
+
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 
 const authorAvatar = computed(() => {
@@ -144,7 +169,9 @@ const authorAvatar = computed(() => {
 
 const renderedContent = computed(() => {
   if (!article.value) return ''
-  return marked(article.value.content)
+  let html = marked(article.value.content)
+  html = renderMath(html)
+  return html
 })
 
 const isLiked = ref(false)

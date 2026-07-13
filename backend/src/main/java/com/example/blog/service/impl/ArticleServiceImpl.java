@@ -35,6 +35,16 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public List<Article> findByAuthor(Long authorId) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Article::getAuthorId, authorId)
+                .eq(Article::getIsPublished, true)
+                .orderByDesc(Article::getCreatedAt);
+        return list(wrapper);
+    }
+
+    @Override
+    public List<Article> findDraftsByAuthor(Long authorId) {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getAuthorId, authorId)
+                .eq(Article::getIsPublished, false)
                 .orderByDesc(Article::getCreatedAt);
         return list(wrapper);
     }
