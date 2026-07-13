@@ -79,6 +79,12 @@
         >
           收藏 ({{ likedArticles.length }})
         </button>
+        <button 
+          @click="activeTab = 'messages'"
+          :class="['px-4 py-2 font-medium', activeTab === 'messages' ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-500']"
+        >
+          留言 ({{ messages.length }})
+        </button>
       </div>
 
       <div v-if="activeTab === 'articles'" class="space-y-4">
@@ -138,6 +144,69 @@
           暂无收藏
         </div>
       </div>
+
+      <div v-if="activeTab === 'messages'" class="space-y-4">
+        <div v-for="message in messages" :key="message.id" class="card p-6">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold">
+                  {{ message.name.charAt(0) }}
+                </div>
+                <div>
+                  <h4 class="font-semibold">{{ message.name }}</h4>
+                  <p class="text-sm text-gray-500">{{ message.email }}</p>
+                </div>
+              </div>
+              <div class="mt-3">
+                <p v-if="message.subject" class="text-sm font-medium text-gray-700">{{ message.subject }}</p>
+                <p class="text-gray-600 mt-1">{{ message.message }}</p>
+              </div>
+              <div v-if="message.replied && message.replyContent" class="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p class="text-sm font-medium text-primary-600 mb-1">我的回复：</p>
+                <p class="text-gray-600">{{ message.replyContent }}</p>
+              </div>
+              <div class="flex items-center space-x-4 mt-4 text-sm text-gray-400">
+                <span>{{ formatDate(message.createdAt) }}</span>
+                <span :class="message.replied ? 'text-green-500' : 'text-yellow-500'">
+                  {{ message.replied ? '已回复' : '待回复' }}
+                </span>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2 ml-4">
+              <button 
+                v-if="!message.replied"
+                @click="toggleReply(message.id)" 
+                class="btn btn-primary text-sm"
+              >
+                回复
+              </button>
+              <button 
+                @click="deleteMessage(message.id)" 
+                class="btn btn-danger text-sm"
+              >
+                删除
+              </button>
+            </div>
+          </div>
+          
+          <div v-if="replyForm.id === message.id" class="mt-4 p-4 bg-gray-50 rounded-lg">
+            <textarea 
+              v-model="replyForm.content"
+              class="form-input textarea w-full"
+              placeholder="输入回复内容..."
+              rows="3"
+            ></textarea>
+            <div class="flex justify-end space-x-2 mt-3">
+              <button @click="cancelReply" class="btn btn-outline text-sm">取消</button>
+              <button @click="submitReply(message.id)" class="btn btn-primary text-sm">发送回复</button>
+            </div>
+          </div>
+        </div>
+        <div v-if="messages.length === 0" class="text-center py-16 text-gray-500">
+          暂无留言
+        </div>
+      </div>
     </div>
   </Layout>
 </template>
@@ -147,7 +216,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Layout from '@/components/Layout.vue'
 import { useUserStore } from '@/stores/user'
-import { articleApi, userApi, uploadApi, followApi, articleLikeApi } from '@/api/index'
+import { articleApi, userApi, uploadApi, followApi, articleLikeApi, contactApi } from '@/api/index'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -157,6 +226,8 @@ const drafts = ref([])
 const likedArticles = ref([])
 const stats = ref({ followerCount: 0, followingCount: 0 })
 const loading = ref(false)
+const messages = ref([])
+const replyForm = ref({ id: null, content: '' })
 
 const user = computed(() => userStore.user)
 
@@ -166,6 +237,7 @@ onMounted(async () => {
   await loadDrafts()
   await loadLikedArticles()
   await loadStats()
+  await loadMessages()
 })
 
 const loadProfile = async () => {
@@ -269,6 +341,59 @@ const unlikeArticle = async (articleId) => {
   } catch (error) {
     console.error('取消收藏失败:', error)
     alert('取消收藏失败')
+  }
+}
+
+const loadMessages = async () => {
+  try {
+    const response = await contactApi.list()
+    if (response.code === 200) {
+      messages.value = response.data || []
+    }
+  } catch (error) {
+    console.error('加载留言失败:', error)
+  }
+}
+
+const toggleReply = (messageId) => {
+  replyForm.value = { id: messageId, content: '' }
+}
+
+const cancelReply = () => {
+  replyForm.value = { id: null, content: '' }
+}
+
+const submitReply = async (messageId) => {
+  if (!replyForm.value.content.trim()) {
+    alert('请输入回复内容')
+    return
+  }
+  
+  try {
+    const response = await contactApi.reply(messageId, { replyContent: replyForm.value.content.trim() })
+    if (response.code === 200) {
+      await loadMessages()
+      cancelReply()
+      alert('回复成功')
+    }
+  } catch (error) {
+    console.error('回复失败:', error)
+    alert('回复失败')
+  }
+}
+
+const deleteMessage = async (messageId) => {
+  if (!confirm('确定要删除这条留言吗？')) return
+  
+  try {
+    const response = await contactApi.delete(messageId)
+    if (response.code === 200) {
+      await loadMessages()
+      alert('删除成功')
+    }
+  } catch (error) {
+    console.error('删除留言失败:', error)
+    alert('删除失败')
   }
 }
 

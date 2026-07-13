@@ -59,7 +59,8 @@ export const commentApi = {
 
 export const userApi = {
   getProfile: () => api.get('/user/profile'),
-  updateProfile: (data) => api.put('/user/profile', data)
+  updateProfile: (data) => api.put('/user/profile', data),
+  getPublicProfile: () => api.get('/user/public')
 }
 
 export const uploadApi = {
@@ -83,6 +84,14 @@ export const articleLikeApi = {
   like: (articleId) => api.post(`/article-likes/${articleId}`),
   unlike: (articleId) => api.delete(`/article-likes/${articleId}`),
   getLikedArticles: () => api.get('/article-likes/user')
+}
+
+export const contactApi = {
+  create: (data) => api.post('/contact', data),
+  list: () => api.get('/contact'),
+  getById: (id) => api.get(`/contact/${id}`),
+  reply: (id, data) => api.put(`/contact/${id}/reply`, data),
+  delete: (id) => api.delete(`/contact/${id}`)
 }
 
 export default api

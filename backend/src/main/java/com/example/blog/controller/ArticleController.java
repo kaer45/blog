@@ -4,7 +4,9 @@ package com.example.blog.controller;
 import com.example.blog.dto.ArticleDTO;
 import com.example.blog.dto.Result;
 import com.example.blog.entity.Article;
+import com.example.blog.entity.Category;
 import com.example.blog.service.ArticleService;
+import com.example.blog.service.CategoryService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,9 +19,11 @@ import java.util.List;
 public class ArticleController {
 
     private final ArticleService articleService;
+    private final CategoryService categoryService;
 
-    public ArticleController(ArticleService articleService) {
+    public ArticleController(ArticleService articleService, CategoryService categoryService) {
         this.articleService = articleService;
+        this.categoryService = categoryService;
     }
 
     @GetMapping
@@ -68,6 +72,11 @@ public class ArticleController {
             article.setPublishedAt(java.time.LocalDateTime.now());
         }
         articleService.save(article);
+        
+        if (article.getIsPublished() && article.getCategoryId() != null) {
+            updateCategoryArticleCount(article.getCategoryId(), 1);
+        }
+        
         return Result.success(article);
     }
 
@@ -89,12 +98,32 @@ public class ArticleController {
         if (!article.getAuthorId().equals(currentUserId)) {
             throw new com.example.blog.exception.ForbiddenException("无权修改该文章");
         }
+        
+        Long oldCategoryId = article.getCategoryId();
+        boolean wasPublished = article.getIsPublished();
+        
         article.setTitle(dto.getTitle());
         article.setSummary(dto.getSummary());
         article.setContent(dto.getContent());
         article.setCategoryId(dto.getCategoryId());
         article.setUpdatedAt(java.time.LocalDateTime.now());
+        
+        if (dto.getIsPublished() != null) {
+            article.setIsPublished(dto.getIsPublished());
+            if (dto.getIsPublished()) {
+                article.setPublishedAt(java.time.LocalDateTime.now());
+            }
+        }
+        
         articleService.updateById(article);
+        
+        if (wasPublished && oldCategoryId != null && !oldCategoryId.equals(dto.getCategoryId())) {
+            updateCategoryArticleCount(oldCategoryId, -1);
+        }
+        if (article.getIsPublished() && dto.getCategoryId() != null && !dto.getCategoryId().equals(oldCategoryId)) {
+            updateCategoryArticleCount(dto.getCategoryId(), 1);
+        }
+        
         return Result.success(article);
     }
 
@@ -108,6 +137,11 @@ public class ArticleController {
         if (!article.getAuthorId().equals(currentUserId)) {
             throw new com.example.blog.exception.ForbiddenException("无权删除该文章");
         }
+        
+        if (article.getIsPublished() && article.getCategoryId() != null) {
+            updateCategoryArticleCount(article.getCategoryId(), -1);
+        }
+        
         articleService.removeById(id);
         return Result.success(null);
     }
@@ -123,6 +157,11 @@ public class ArticleController {
             throw new com.example.blog.exception.ForbiddenException("无权发布该文章");
         }
         article = articleService.publish(id);
+        
+        if (article.getCategoryId() != null) {
+            updateCategoryArticleCount(article.getCategoryId(), 1);
+        }
+        
         return Result.success(article);
     }
 
@@ -136,7 +175,23 @@ public class ArticleController {
         if (!article.getAuthorId().equals(currentUserId)) {
             throw new com.example.blog.exception.ForbiddenException("无权修改该文章状态");
         }
+        
+        if (article.getIsPublished() && article.getCategoryId() != null) {
+            updateCategoryArticleCount(article.getCategoryId(), -1);
+        }
+        
         article = articleService.draft(id);
         return Result.success(article);
+    }
+    
+    private void updateCategoryArticleCount(Long categoryId, int delta) {
+        Category category = categoryService.getById(categoryId);
+        if (category != null) {
+            category.setArticleCount(category.getArticleCount() + delta);
+            if (category.getArticleCount() < 0) {
+                category.setArticleCount(0);
+            }
+            categoryService.updateById(category);
+        }
     }
 }

@@ -12,7 +12,7 @@
             预览
           </button>
           <button @click="publishArticle" class="btn btn-primary">
-            {{ isEdit ? '更新文章' : '发布文章' }}
+            {{ isEdit && !isDraft ? '更新文章' : '发布文章' }}
           </button>
         </div>
       </div>
@@ -113,6 +113,7 @@ const route = useRoute()
 const router = useRouter()
 
 const isEdit = ref(!!route.params.id)
+const isDraft = ref(false)
 const activeTab = ref('editor')
 const categories = ref([])
 const loading = ref(false)
@@ -179,6 +180,7 @@ const loadArticle = async () => {
       form.value.summary = article.summary
       form.value.content = article.content
       form.value.categoryId = article.categoryId
+      isDraft.value = article.isPublished === false
     }
   } catch (error) {
     console.error('加载文章失败:', error)
@@ -231,17 +233,27 @@ const publishArticle = async () => {
   loading.value = true
   try {
     if (isEdit.value) {
-      await articleApi.update(route.params.id, {
-        ...form.value,
-        isPublished: true
-      })
+      if (isDraft.value) {
+        await articleApi.update(route.params.id, {
+          ...form.value,
+          isPublished: false
+        })
+        await articleApi.publish(route.params.id)
+        alert('文章发布成功！')
+      } else {
+        await articleApi.update(route.params.id, {
+          ...form.value,
+          isPublished: true
+        })
+        alert('文章更新成功！')
+      }
     } else {
       await articleApi.create({
         ...form.value,
         isPublished: true
       })
+      alert('文章发布成功！')
     }
-    alert(isEdit.value ? '文章更新成功！' : '文章发布成功！')
     router.push('/')
   } catch (error) {
     alert('发布失败')

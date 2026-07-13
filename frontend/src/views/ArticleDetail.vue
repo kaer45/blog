@@ -39,7 +39,7 @@
                 </svg>
                 <span>{{ article.commentCount || 0 }}</span>
               </span>
-              <span class="flex items-center text-gray-500">
+              <span v-if="isLoggedIn" class="flex items-center text-gray-500">
                 <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -48,8 +48,18 @@
               </span>
             </div>
             <div class="flex items-center space-x-2">
-              <button class="btn btn-outline">分享</button>
-              <button class="btn btn-outline">收藏</button>
+              <button @click="shareArticle" class="btn btn-outline flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                </svg>
+                分享
+              </button>
+              <button @click="toggleFavorite" class="btn btn-outline flex items-center" :class="{ 'bg-yellow-50 text-yellow-600': isFavorited }">
+                <svg class="w-4 h-4 mr-1" :class="{ 'fill-current': isFavorited }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+                {{ isFavorited ? '已收藏' : '收藏' }}
+              </button>
             </div>
           </div>
         </div>
@@ -114,7 +124,7 @@ import hljs from 'highlight.js'
 import katex from 'katex'
 import Layout from '@/components/Layout.vue'
 import Sidebar from '@/components/Sidebar.vue'
-import { articleApi, commentApi, categoryApi } from '@/api/index'
+import { articleApi, commentApi, categoryApi, articleLikeApi } from '@/api/index'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -176,6 +186,7 @@ const renderedContent = computed(() => {
 
 const isLiked = ref(false)
 const likeCount = ref(0)
+const isFavorited = ref(false)
 const commentContent = ref('')
 
 const loadArticle = async () => {
@@ -184,7 +195,25 @@ const loadArticle = async () => {
     const response = await articleApi.getById(articleId.value)
     if (response.code === 200) {
       article.value = response.data
-      likeCount.value = article.value.likeCount || 0
+    }
+    
+    try {
+      const countResponse = await articleLikeApi.countLikes(articleId.value)
+      likeCount.value = countResponse.data || 0
+    } catch (e) {
+      console.error('加载点赞数失败:', e)
+      likeCount.value = article.value?.likeCount || 0
+    }
+    
+    if (isLoggedIn.value) {
+      try {
+        const likedResponse = await articleLikeApi.checkLiked(articleId.value)
+        isLiked.value = likedResponse.data || false
+        const favoritedResponse = await articleLikeApi.checkLiked(articleId.value)
+        isFavorited.value = favoritedResponse.data || false
+      } catch (e) {
+        console.error('加载点赞/收藏状态失败:', e)
+      }
     }
   } catch (error) {
     console.error('加载文章失败:', error)
@@ -230,13 +259,61 @@ const formatDate = (dateStr) => {
   return date.toLocaleString('zh-CN')
 }
 
-const toggleLike = () => {
+const toggleLike = async () => {
   if (!isLoggedIn.value) {
     alert('请先登录')
     return
   }
-  isLiked.value = !isLiked.value
-  likeCount.value += isLiked.value ? 1 : -1
+  try {
+    if (isLiked.value) {
+      await articleLikeApi.unlike(articleId.value)
+      likeCount.value -= 1
+    } else {
+      await articleLikeApi.like(articleId.value)
+      likeCount.value += 1
+    }
+    isLiked.value = !isLiked.value
+  } catch (error) {
+    console.error('点赞失败:', error)
+    alert('点赞失败')
+  }
+}
+
+const shareArticle = async () => {
+  const url = window.location.href
+  try {
+    await navigator.clipboard.writeText(url)
+    alert('链接已复制到剪贴板！')
+  } catch (error) {
+    const textarea = document.createElement('textarea')
+    textarea.value = url
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    alert('链接已复制到剪贴板！')
+  }
+}
+
+const toggleFavorite = async () => {
+  if (!isLoggedIn.value) {
+    alert('请先登录')
+    return
+  }
+  try {
+    if (isFavorited.value) {
+      await articleLikeApi.unlike(articleId.value)
+      likeCount.value -= 1
+    } else {
+      await articleLikeApi.like(articleId.value)
+      likeCount.value += 1
+    }
+    isFavorited.value = !isFavorited.value
+    isLiked.value = isFavorited.value
+  } catch (error) {
+    console.error('收藏失败:', error)
+    alert('收藏失败')
+  }
 }
 
 const submitComment = async () => {

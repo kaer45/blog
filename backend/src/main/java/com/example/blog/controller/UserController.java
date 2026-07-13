@@ -19,6 +19,16 @@ public class UserController {
         this.userService = userService;
     }
 
+    @GetMapping("/public")
+    public Result<User> getPublicProfile() {
+        User user = userService.list().stream().findFirst().orElse(null);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        user.setPassword(null);
+        return Result.success(user);
+    }
+
     @GetMapping("/profile")
     public Result<User> getProfile() {
         Long currentUserId = getCurrentUserId();
