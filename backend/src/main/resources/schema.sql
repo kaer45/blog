@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS `category` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(50) NOT NULL UNIQUE,
     `description` VARCHAR(255),
+    `icon` VARCHAR(20),
     `article_count` INT DEFAULT 0,
     `created_at` DATETIME NOT NULL,
     `updated_at` DATETIME NOT NULL

@@ -5,7 +5,7 @@
       <h3 class="text-lg font-bold mb-4">关于我</h3>
       <div class="flex flex-col items-center text-center">
         <img 
-          :src="user.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.username" 
+          :src="(user.avatar ? user.avatar : 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.username)" 
           :alt="user.nickname || user.username" 
           class="w-20 h-20 rounded-full mb-3 object-cover"
         />

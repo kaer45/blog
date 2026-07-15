@@ -60,7 +60,8 @@ export const commentApi = {
 export const userApi = {
   getProfile: () => api.get('/user/profile'),
   updateProfile: (data) => api.put('/user/profile', data),
-  getPublicProfile: () => api.get('/user/public')
+  getPublicProfile: () => api.get('/user/public'),
+  getByUsername: (username) => api.get(`/user/username/${username}`)
 }
 
 export const uploadApi = {
@@ -84,6 +85,21 @@ export const articleLikeApi = {
   like: (articleId) => api.post(`/article-likes/${articleId}`),
   unlike: (articleId) => api.delete(`/article-likes/${articleId}`),
   getLikedArticles: () => api.get('/article-likes/user')
+}
+
+export const articleFavoriteApi = {
+  countFavorites: (articleId) => api.get(`/article-favorites/count/${articleId}`),
+  checkFavorited: (articleId) => api.get(`/article-favorites/check/${articleId}`),
+  favorite: (articleId) => api.post(`/article-favorites/${articleId}`),
+  unfavorite: (articleId) => api.delete(`/article-favorites/${articleId}`),
+  getFavoritedArticles: () => api.get('/article-favorites/user')
+}
+
+export const commentLikeApi = {
+  countLikes: (commentId) => api.get(`/comment-likes/count/${commentId}`),
+  checkLiked: (commentId) => api.get(`/comment-likes/check/${commentId}`),
+  like: (commentId) => api.post(`/comment-likes/${commentId}`),
+  unlike: (commentId) => api.delete(`/comment-likes/${commentId}`)
 }
 
 export const contactApi = {

@@ -63,6 +63,9 @@ const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 
 const authorAvatar = computed(() => {
+  if (props.article.authorAvatar) {
+    return props.article.authorAvatar
+  }
   return 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (props.article.authorName || 'User')
 })
 

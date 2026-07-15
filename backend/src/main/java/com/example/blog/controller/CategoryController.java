@@ -31,6 +31,11 @@ public class CategoryController {
 
     @PostMapping
     public Result<Category> create(@RequestBody Category category) {
+        category.setCreatedAt(java.time.LocalDateTime.now());
+        category.setUpdatedAt(java.time.LocalDateTime.now());
+        if (category.getArticleCount() == null) {
+            category.setArticleCount(0);
+        }
         categoryService.save(category);
         return Result.success(category);
     }

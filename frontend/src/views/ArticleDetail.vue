@@ -12,13 +12,17 @@
           <h1 class="text-3xl font-bold text-gray-900 mb-6">{{ article.title }}</h1>
           
           <div class="flex items-center space-x-4 mb-6">
-            <img 
-              :src="authorAvatar" 
-              :alt="article.authorName" 
-              class="w-12 h-12 rounded-full"
-            />
+            <router-link :to="`/user/${article.authorName}`">
+              <img 
+                :src="authorAvatar" 
+                :alt="article.authorName" 
+                class="w-12 h-12 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+              />
+            </router-link>
             <div>
-              <h4 class="font-semibold">{{ article.authorName || '作者' }}</h4>
+              <router-link :to="`/user/${article.authorName}`" class="font-semibold hover:text-primary-600">
+                {{ article.authorNickname || article.authorName || '作者' }}
+              </router-link>
               <p class="text-sm text-gray-500">{{ formatDate(article.createdAt) }}</p>
             </div>
           </div>
@@ -70,20 +74,86 @@
           <div v-if="comments.length > 0" class="space-y-4">
             <div v-for="comment in comments" :key="comment.id" class="comment">
               <div class="flex items-center space-x-3 mb-2">
-                <img 
-                  :src="getCommentAvatar(comment.authorName)" 
-                  :alt="comment.authorName" 
-                  class="w-8 h-8 rounded-full"
-                />
+                <router-link :to="`/user/${comment.authorName}`">
+                  <img 
+                    :src="getCommentAvatar(comment)" 
+                    :alt="comment.authorName" 
+                    class="w-8 h-8 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+                  />
+                </router-link>
                 <div>
-                  <span class="font-semibold">{{ comment.authorName }}</span>
+                  <router-link :to="`/user/${comment.authorName}`" class="font-semibold hover:text-primary-600">
+                    {{ comment.authorNickname || comment.authorName }}
+                  </router-link>
                   <span class="text-sm text-gray-500 ml-2">{{ formatDate(comment.createdAt) }}</span>
                 </div>
               </div>
               <p class="text-gray-700">{{ comment.content }}</p>
               <div class="flex items-center space-x-4 mt-2">
-                <button class="text-sm text-gray-500 hover:text-primary-600">回复</button>
-                <button class="text-sm text-gray-500 hover:text-red-500">点赞</button>
+                <button @click="showReplyBox(comment, comment)" class="text-sm text-gray-500 hover:text-primary-600">回复</button>
+                <button @click="toggleCommentLike(comment)" class="flex items-center text-sm text-gray-500 hover:text-red-500">
+                  <svg class="w-4 h-4 mr-1" :class="{ 'fill-current text-red-500': commentLikedMap[comment.id] }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                  </svg>
+                  <span>{{ comment.likeCount || 0 }}</span>
+                </button>
+                <button v-if="comment.children && comment.children.length > 0" @click="toggleCollapse(comment.id)" class="text-sm text-primary-600 hover:text-primary-700">
+                  {{ collapsedMap[comment.id] ? `展开${comment.children.length}条回复` : '收起回复' }}
+                </button>
+              </div>
+              <div v-if="replyTargetComment?.id === comment.id" class="mt-3 pl-10">
+                <textarea 
+                  v-model="replyContent"
+                  class="form-input textarea"
+                  :placeholder="`回复 ${comment.authorNickname || comment.authorName}...`"
+                ></textarea>
+                <div class="flex justify-end space-x-2 mt-2">
+                  <button @click="cancelReply" class="btn btn-outline">取消</button>
+                  <button @click="submitReply" class="btn btn-primary">回复</button>
+                </div>
+              </div>
+              <div v-if="comment.children && comment.children.length > 0 && !collapsedMap[comment.id]" class="mt-4 ml-6 pl-4 border-l-2 border-gray-100 space-y-3">
+                <div v-for="reply in comment.children" :key="reply.id">
+                  <div class="flex items-center space-x-3 mb-2">
+                    <router-link :to="`/user/${reply.authorName}`">
+                      <img 
+                        :src="getCommentAvatar(reply)" 
+                        :alt="reply.authorName" 
+                        class="w-7 h-7 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+                      />
+                    </router-link>
+                    <div class="flex items-center flex-wrap">
+                      <router-link :to="`/user/${reply.authorName}`" class="font-semibold hover:text-primary-600">
+                        {{ reply.authorNickname || reply.authorName }}
+                      </router-link>
+                      <span v-if="reply.replyToNickname || reply.replyToName" class="text-sm text-gray-500 mx-1">
+                        回复 <span class="text-primary-600">@{{ reply.replyToNickname || reply.replyToName }}</span>
+                      </span>
+                      <span class="text-sm text-gray-500 ml-2">{{ formatDate(reply.createdAt) }}</span>
+                    </div>
+                  </div>
+                  <p class="text-gray-700">{{ reply.content }}</p>
+                  <div class="flex items-center space-x-4 mt-2">
+                    <button @click="showReplyBox(reply, comment)" class="text-sm text-gray-500 hover:text-primary-600">回复</button>
+                    <button @click="toggleCommentLike(reply)" class="flex items-center text-sm text-gray-500 hover:text-red-500">
+                      <svg class="w-4 h-4 mr-1" :class="{ 'fill-current text-red-500': commentLikedMap[reply.id] }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                      </svg>
+                      <span>{{ reply.likeCount || 0 }}</span>
+                    </button>
+                  </div>
+                  <div v-if="replyTargetComment?.id === reply.id" class="mt-3 pl-8">
+                    <textarea 
+                      v-model="replyContent"
+                      class="form-input textarea"
+                      :placeholder="`回复 ${reply.authorNickname || reply.authorName}...`"
+                    ></textarea>
+                    <div class="flex justify-end space-x-2 mt-2">
+                      <button @click="cancelReply" class="btn btn-outline">取消</button>
+                      <button @click="submitReply" class="btn btn-primary">回复</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -124,7 +194,7 @@ import hljs from 'highlight.js'
 import katex from 'katex'
 import Layout from '@/components/Layout.vue'
 import Sidebar from '@/components/Sidebar.vue'
-import { articleApi, commentApi, categoryApi, articleLikeApi } from '@/api/index'
+import { articleApi, commentApi, categoryApi, articleLikeApi, articleFavoriteApi, commentLikeApi } from '@/api/index'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -174,6 +244,9 @@ const renderMath = (html) => {
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 
 const authorAvatar = computed(() => {
+  if (article.value?.authorAvatar) {
+    return article.value.authorAvatar
+  }
   return 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (article.value?.authorName || 'User')
 })
 
@@ -188,6 +261,11 @@ const isLiked = ref(false)
 const likeCount = ref(0)
 const isFavorited = ref(false)
 const commentContent = ref('')
+const commentLikedMap = ref({})
+const replyTargetComment = ref(null)
+const replyRootComment = ref(null)
+const replyContent = ref('')
+const collapsedMap = ref({})
 
 const loadArticle = async () => {
   loading.value = true
@@ -209,7 +287,7 @@ const loadArticle = async () => {
       try {
         const likedResponse = await articleLikeApi.checkLiked(articleId.value)
         isLiked.value = likedResponse.data || false
-        const favoritedResponse = await articleLikeApi.checkLiked(articleId.value)
+        const favoritedResponse = await articleFavoriteApi.checkFavorited(articleId.value)
         isFavorited.value = favoritedResponse.data || false
       } catch (e) {
         console.error('加载点赞/收藏状态失败:', e)
@@ -227,6 +305,27 @@ const loadComments = async () => {
     const response = await commentApi.listByArticle(articleId.value)
     if (response.code === 200) {
       comments.value = response.data || []
+      
+      if (isLoggedIn.value) {
+        for (const comment of comments.value) {
+          try {
+            const likedResponse = await commentLikeApi.checkLiked(comment.id)
+            commentLikedMap.value[comment.id] = likedResponse.data || false
+          } catch (e) {
+            commentLikedMap.value[comment.id] = false
+          }
+          if (comment.children) {
+            for (const reply of comment.children) {
+              try {
+                const likedResponse = await commentLikeApi.checkLiked(reply.id)
+                commentLikedMap.value[reply.id] = likedResponse.data || false
+              } catch (e) {
+                commentLikedMap.value[reply.id] = false
+              }
+            }
+          }
+        }
+      }
     }
   } catch (error) {
     console.error('加载评论失败:', error)
@@ -249,8 +348,11 @@ const getCategoryName = (categoryId) => {
   return category ? category.name : '未分类'
 }
 
-const getCommentAvatar = (authorName) => {
-  return 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (authorName || 'Commenter')
+const getCommentAvatar = (comment) => {
+  if (comment.authorAvatar) {
+    return comment.authorAvatar
+  }
+  return 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (comment.authorName || 'Commenter')
 }
 
 const formatDate = (dateStr) => {
@@ -302,14 +404,11 @@ const toggleFavorite = async () => {
   }
   try {
     if (isFavorited.value) {
-      await articleLikeApi.unlike(articleId.value)
-      likeCount.value -= 1
+      await articleFavoriteApi.unfavorite(articleId.value)
     } else {
-      await articleLikeApi.like(articleId.value)
-      likeCount.value += 1
+      await articleFavoriteApi.favorite(articleId.value)
     }
     isFavorited.value = !isFavorited.value
-    isLiked.value = isFavorited.value
   } catch (error) {
     console.error('收藏失败:', error)
     alert('收藏失败')
@@ -338,6 +437,69 @@ const submitComment = async () => {
     }
   } catch (error) {
     alert('评论失败，请检查网络')
+  }
+}
+
+const toggleCommentLike = async (comment) => {
+  if (!isLoggedIn.value) {
+    alert('请先登录')
+    return
+  }
+  try {
+    if (commentLikedMap.value[comment.id]) {
+      await commentLikeApi.unlike(comment.id)
+      if (comment.likeCount) comment.likeCount -= 1
+    } else {
+      await commentLikeApi.like(comment.id)
+      comment.likeCount = (comment.likeCount || 0) + 1
+    }
+    commentLikedMap.value[comment.id] = !commentLikedMap.value[comment.id]
+  } catch (error) {
+    console.error('评论点赞失败:', error)
+    alert('点赞失败')
+  }
+}
+
+const showReplyBox = (comment, rootComment) => {
+  replyTargetComment.value = comment
+  replyRootComment.value = rootComment
+  replyContent.value = ''
+}
+
+const cancelReply = () => {
+  replyTargetComment.value = null
+  replyRootComment.value = null
+  replyContent.value = ''
+}
+
+const toggleCollapse = (commentId) => {
+  collapsedMap.value[commentId] = !collapsedMap.value[commentId]
+}
+
+const submitReply = async () => {
+  if (!replyContent.value.trim()) {
+    alert('请输入回复内容')
+    return
+  }
+  
+  try {
+    const response = await commentApi.create({
+      articleId: articleId.value,
+      authorId: userStore.user.id,
+      parentId: replyRootComment.value.id,
+      replyToUserId: replyTargetComment.value.authorId,
+      content: replyContent.value
+    })
+    
+    if (response.code === 200) {
+      alert('回复提交成功！')
+      cancelReply()
+      loadComments()
+    } else {
+      alert(response.message || '回复失败')
+    }
+  } catch (error) {
+    alert('回复失败，请检查网络')
   }
 }
 

@@ -29,6 +29,16 @@ public class UserController {
         return Result.success(user);
     }
 
+    @GetMapping("/username/{username}")
+    public Result<User> getByUsername(@PathVariable String username) {
+        User user = userService.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        user.setPassword(null);
+        return Result.success(user);
+    }
+
     @GetMapping("/profile")
     public Result<User> getProfile() {
         Long currentUserId = getCurrentUserId();

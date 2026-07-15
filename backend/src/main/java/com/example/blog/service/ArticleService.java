@@ -1,7 +1,9 @@
 
 package com.example.blog.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.example.blog.dto.PageResult;
 import com.example.blog.entity.Article;
 
 import java.util.List;
@@ -14,4 +16,7 @@ public interface ArticleService extends IService<Article> {
     Article findByIdWithAuthor(Long id);
     Article publish(Long id);
     Article draft(Long id);
+    PageResult<Article> findPublishedArticles(int page, int size);
+    PageResult<Article> findByCategory(Long categoryId, int page, int size);
+    PageResult<Article> findByAuthor(Long authorId, int page, int size);
 }

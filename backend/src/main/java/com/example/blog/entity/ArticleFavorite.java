@@ -1,4 +1,3 @@
-
 package com.example.blog.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -9,14 +8,11 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("category")
-public class Category {
+@TableName("article_favorite")
+public class ArticleFavorite {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String name;
-    private String description;
-    private String icon;
-    private Integer articleCount;
+    private Long userId;
+    private Long articleId;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

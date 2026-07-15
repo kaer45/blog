@@ -2,6 +2,7 @@
 package com.example.blog.controller;
 
 import com.example.blog.dto.ArticleDTO;
+import com.example.blog.dto.PageResult;
 import com.example.blog.dto.Result;
 import com.example.blog.entity.Article;
 import com.example.blog.entity.Category;
@@ -27,21 +28,26 @@ public class ArticleController {
     }
 
     @GetMapping
-    public Result<List<Article>> list(
+    public Result<PageResult<Article>> list(
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long authorId,
-            @RequestParam(required = false) Boolean draft) {
-        List<Article> articles;
+            @RequestParam(required = false) Boolean draft,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "5") Integer size) {
         if (draft != null && draft) {
-            articles = articleService.findDraftsByAuthor(getCurrentUserId());
+            List<Article> articles = articleService.findDraftsByAuthor(getCurrentUserId());
+            long total = articles.size();
+            int fromIndex = (page - 1) * size;
+            int toIndex = Math.min(fromIndex + size, articles.size());
+            List<Article> pageData = fromIndex < articles.size() ? articles.subList(fromIndex, toIndex) : List.of();
+            return Result.success(new PageResult<>(pageData, page, size, total));
         } else if (authorId != null) {
-            articles = articleService.findByAuthor(authorId);
+            return Result.success(articleService.findByAuthor(authorId, page, size));
         } else if (categoryId != null) {
-            articles = articleService.findByCategory(categoryId);
+            return Result.success(articleService.findByCategory(categoryId, page, size));
         } else {
-            articles = articleService.findPublishedArticles();
+            return Result.success(articleService.findPublishedArticles(page, size));
         }
-        return Result.success(articles);
     }
 
     @GetMapping("/{id}")
